@@ -1,0 +1,34 @@
+{
+  "entities": {
+    "HistoryItem": {
+      "title": "HistoryItem",
+      "description": "A saved prescription analysis result.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the history item."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this history item."
+        },
+        "timestamp": {
+          "type": "number",
+          "description": "The time the prescription was analyzed (milliseconds since epoch)."
+        },
+        "data": {
+          "type": "string",
+          "description": "JSON stringified PrescriptionData object."
+        }
+      },
+      "required": ["id", "userId", "timestamp", "data"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/history/{historyId}": {
+      "schema": "HistoryItem",
+      "description": "A user's history of analyzed prescriptions."
+    }
+  }
+}
