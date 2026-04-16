@@ -7,9 +7,10 @@ import StructuredView from './StructuredView';
 interface OutputPanelProps {
   data: PrescriptionData | null;
   error: string | null;
+  onReset: () => void;
 }
 
-const OutputPanel: React.FC<OutputPanelProps> = ({ data, error }) => {
+const OutputPanel: React.FC<OutputPanelProps> = ({ data, error, onReset }) => {
   const [viewMode, setViewMode] = useState<OutputViewMode>('structured');
   const [copied, setCopied] = useState(false);
 
@@ -36,8 +37,8 @@ const OutputPanel: React.FC<OutputPanelProps> = ({ data, error }) => {
           <h3 className="text-2xl font-bold tracking-tight text-slate-900">Analysis Failed</h3>
           <p className="text-slate-500 max-w-md mx-auto leading-relaxed">{error}</p>
         </div>
-        <button 
-          onClick={() => window.location.reload()}
+        <button
+          onClick={onReset}
           className="text-sm font-bold text-[#FF4D00] uppercase tracking-widest hover:underline"
         >
           Try Again

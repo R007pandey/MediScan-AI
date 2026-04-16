@@ -15,14 +15,20 @@ interface InputPanelProps {
   isLoading: boolean;
   onReset: () => void;
   isLanding?: boolean;
+  onError?: (message: string) => void;
 }
 
-const InputPanel: React.FC<InputPanelProps> = ({ 
-  onAnalyze, 
-  isLoading, 
-  onReset, 
-  isLanding = false
+const InputPanel: React.FC<InputPanelProps> = ({
+  onAnalyze,
+  isLoading,
+  onReset,
+  isLanding = false,
+  onError,
 }) => {
+  const reportError = (msg: string) => {
+    if (onError) onError(msg);
+    else console.warn(msg);
+  };
   const [mode, setMode] = useState<InputMode>('upload');
   const [url, setUrl] = useState('');
   const [files, setFiles] = useState<FileData[]>([]);
@@ -33,7 +39,7 @@ const InputPanel: React.FC<InputPanelProps> = ({
     if (!selected.length) return;
 
     if (files.length + selected.length > 5) {
-      alert("Maximum 5 files allowed.");
+      reportError('Maximum 5 files allowed.');
       return;
     }
 
@@ -60,7 +66,7 @@ const InputPanel: React.FC<InputPanelProps> = ({
   const handleUrlBlur = async () => {
     if (!url) return;
     if (files.length >= 5) {
-      alert("Maximum 5 files allowed.");
+      reportError('Maximum 5 files allowed.');
       return;
     }
     try {
@@ -79,7 +85,7 @@ const InputPanel: React.FC<InputPanelProps> = ({
       };
       reader.readAsDataURL(blob);
     } catch (err) {
-      alert("Could not fetch image from URL. CORS or invalid link might be the cause.");
+      reportError('Could not fetch image from URL. CORS or invalid link might be the cause.');
       console.error(err);
     }
   };
@@ -88,7 +94,7 @@ const InputPanel: React.FC<InputPanelProps> = ({
     if (files.length > 0) {
       onAnalyze(files.map(f => ({ base64: f.base64, mimeType: f.mimeType })));
     } else {
-      alert("Please provide at least one file or valid image URL.");
+      reportError('Please provide at least one file or valid image URL.');
     }
   };
 
