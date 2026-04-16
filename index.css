@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  
+  --color-brand-orange: #FF4D00;
+  --color-brand-red: #E60000;
+  --color-bg-light: #FAFAFA;
+  --color-surface-light: #FFFFFF;
+  --color-border-light: #E5E7EB;
+}
+
+@layer base {
+  body {
+    @apply bg-bg-light text-slate-900 antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-surface-light/80 backdrop-blur-md border border-border-light rounded-2xl shadow-xl shadow-slate-200/50;
+  }
+  
+  .btn-primary {
+    @apply bg-brand-orange hover:bg-brand-red text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 shadow-lg shadow-brand-orange/20 hover:shadow-brand-red/40 active:scale-95;
+  }
+  
+  .btn-secondary {
+    @apply bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 py-3 px-6 rounded-full transition-all duration-300 active:scale-95;
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-orange to-brand-red;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}

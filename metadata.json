@@ -1,0 +1,7 @@
+{
+  "name": "MediScan AI",
+  "description": "An AI-powered dashboard for extracting structured data from medical prescriptions. Effortlessly read handwriting and convert images to organized medical records.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
