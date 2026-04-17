@@ -1,3 +1,8 @@
+# Cloud Function local secrets — never commit
+functions/.env
+functions/.runtimeconfig.json
+functions/lib/
+
 # Logs
 logs
 *.log
