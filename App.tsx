@@ -12,6 +12,17 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from 'firebase/firestore';
 
 // ---------------------------------------------------------------------------
+// Dev mode — bypass auth + Firestore when VITE_DEV_MODE=true in .env.local
+// ---------------------------------------------------------------------------
+const IS_DEV = import.meta.env.VITE_DEV_MODE === 'true';
+const DEV_USER = {
+  uid: 'dev-user',
+  email: 'dev@localhost',
+  displayName: 'Dev User',
+  photoURL: null,
+} as unknown as User;
+
+// ---------------------------------------------------------------------------
 // Toast — lightweight inline notification (replaces all alert() calls)
 // ---------------------------------------------------------------------------
 interface ToastProps {
@@ -47,8 +58,8 @@ const App: React.FC = () => {
   const [data, setData] = useState<PrescriptionData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [user, setUser] = useState<User | null>(null);
-  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [user, setUser] = useState<User | null>(IS_DEV ? DEV_USER : null);
+  const [isAuthReady, setIsAuthReady] = useState(IS_DEV); // skip loading state in dev
   const [toast, setToast] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -56,8 +67,9 @@ const App: React.FC = () => {
     setTimeout(() => setToast(null), 5000);
   };
 
-  // Auth listener
+  // Auth listener — skipped in dev mode
   useEffect(() => {
+    if (IS_DEV) return;
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setIsAuthReady(true);
@@ -65,39 +77,35 @@ const App: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  // Firestore History listener
+  // Firestore History listener — in-memory history in dev mode
   useEffect(() => {
-    if (!isAuthReady) return;
+    if (IS_DEV || !isAuthReady || !user) return;
 
-    if (user) {
-      const q = query(
-        collection(db, `users/${user.uid}/history`),
-        orderBy('timestamp', 'desc')
-      );
+    const q = query(
+      collection(db, `users/${user.uid}/history`),
+      orderBy('timestamp', 'desc')
+    );
 
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const historyItems: HistoryItem[] = [];
-        snapshot.forEach((docSnap) => {
-          const docData = docSnap.data();
-          try {
-            historyItems.push({
-              id: docData.id,
-              timestamp: docData.timestamp,
-              data: JSON.parse(docData.data),
-            });
-          } catch (e) {
-            console.error('Failed to parse history item', e);
-          }
-        });
-        setHistory(historyItems);
-      }, (err) => {
-        handleFirestoreError(err, OperationType.LIST, `users/${user.uid}/history`);
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const historyItems: HistoryItem[] = [];
+      snapshot.forEach((docSnap) => {
+        const docData = docSnap.data();
+        try {
+          historyItems.push({
+            id: docData.id,
+            timestamp: docData.timestamp,
+            data: JSON.parse(docData.data),
+          });
+        } catch (e) {
+          console.error('Failed to parse history item', e);
+        }
       });
+      setHistory(historyItems);
+    }, (err) => {
+      handleFirestoreError(err, OperationType.LIST, `users/${user.uid}/history`);
+    });
 
-      return () => unsubscribe();
-    } else {
-      setHistory([]);
-    }
+    return () => unsubscribe();
   }, [user, isAuthReady]);
 
   const handleAnalyze = async (files: { base64: string; mimeType: string }[]) => {
@@ -115,20 +123,25 @@ const App: React.FC = () => {
       const result = await analyzePrescription(files);
       setData(result);
 
-      // Save to Firestore
-      const id = crypto.randomUUID();
-      const timestamp = Date.now();
-      const path = `users/${user.uid}/history/${id}`;
-
-      try {
-        await setDoc(doc(db, path), {
-          id,
-          userId: user.uid,
-          timestamp,
-          data: JSON.stringify(result),
-        });
-      } catch (err) {
-        handleFirestoreError(err, OperationType.CREATE, path);
+      // In dev mode: save to in-memory history only
+      if (IS_DEV) {
+        const id = crypto.randomUUID();
+        setHistory(prev => [{ id, timestamp: Date.now(), data: result }, ...prev]);
+      } else {
+        // Save to Firestore
+        const id = crypto.randomUUID();
+        const timestamp = Date.now();
+        const path = `users/${user.uid}/history/${id}`;
+        try {
+          await setDoc(doc(db, path), {
+            id,
+            userId: user.uid,
+            timestamp,
+            data: JSON.stringify(result),
+          });
+        } catch (err) {
+          handleFirestoreError(err, OperationType.CREATE, path);
+        }
       }
     } catch (err: unknown) {
       console.error(err);
@@ -146,6 +159,10 @@ const App: React.FC = () => {
 
   const handleDeleteHistoryItem = async (id: string) => {
     if (!user) return;
+    if (IS_DEV) {
+      setHistory(prev => prev.filter(item => item.id !== id));
+      return;
+    }
     const path = `users/${user.uid}/history/${id}`;
     try {
       await deleteDoc(doc(db, path));
@@ -216,6 +233,13 @@ const App: React.FC = () => {
   return (
     <div className="flex flex-col h-screen w-full bg-[#FAFAFA] text-slate-900 overflow-hidden font-sans">
       <AnimatePresence>{toast && <Toast message={toast} onClose={() => setToast(null)} />}</AnimatePresence>
+
+      {/* Dev mode banner */}
+      {IS_DEV && (
+        <div className="bg-amber-400 text-amber-900 text-xs font-bold text-center py-1.5 uppercase tracking-widest">
+          ⚠ Dev Mode — Auth + Firestore bypassed · Gemini called directly from client
+        </div>
+      )}
 
       {/* Dashboard Header */}
       <header className="h-16 border-b border-slate-200 flex items-center justify-between px-8 bg-white z-50">
