@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "MediScan AI",
+    "slug": "mediscan-ai",
+    "version": "1.0.0",
+    "scheme": "mediscan",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0f172a"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mediscan.app"
+    },
+    "android": {
+      "package": "com.mediscan.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0f172a"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-web-browser",
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "MediScan needs the camera to scan prescriptions."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "MediScan needs access to your photos to select prescriptions."
+        }
+      ]
+    ]
+  }
+}

@@ -112,6 +112,56 @@ interface AnalyzeRequest {
   files: InputFile[];
 }
 
+// ---------------------------------------------------------------------------
+// Ticket 0.1 — Normalize response shape
+//
+// The model occasionally omits top-level sections or returns null for arrays.
+// Normalizing here means web and mobile can render without defensive checks
+// on every field — the contract is guaranteed at the function boundary.
+// ---------------------------------------------------------------------------
+function normalizeResponse(raw: Record<string, unknown>): Record<string, unknown> {
+  const patientInfo = (raw.patient_info && typeof raw.patient_info === "object")
+    ? raw.patient_info as Record<string, unknown>
+    : {};
+  const doctorInfo = (raw.doctor_info && typeof raw.doctor_info === "object")
+    ? raw.doctor_info as Record<string, unknown>
+    : {};
+  const medicalInfo = (raw.medical_info && typeof raw.medical_info === "object")
+    ? raw.medical_info as Record<string, unknown>
+    : {};
+
+  return {
+    ...raw,
+    patient_info: {
+      patient_name: null,
+      age: null,
+      gender: null,
+      prescription_date: null,
+      ...patientInfo,
+    },
+    doctor_info: {
+      doctor_name: null,
+      specialization: null,
+      clinic_name: null,
+      contact_info: null,
+      doctor_signature_present: null,
+      doctor_stamp_present: null,
+      ...doctorInfo,
+    },
+    medical_info: {
+      diagnosis_primary: null,
+      ...medicalInfo,
+      // Guarantee arrays are never null regardless of what the model returned
+      symptoms: Array.isArray(medicalInfo.symptoms) ? medicalInfo.symptoms : [],
+      medicines: Array.isArray(medicalInfo.medicines) ? medicalInfo.medicines : [],
+      diagnostics_tests: Array.isArray(medicalInfo.diagnostics_tests)
+        ? medicalInfo.diagnostics_tests
+        : [],
+    },
+    warnings: Array.isArray(raw.warnings) ? raw.warnings : [],
+  };
+}
+
 export const analyzePrescription = onCall(
   { secrets: [GEMINI_API_KEY], timeoutSeconds: 120, memory: "512MiB" },
   async (request) => {
@@ -210,6 +260,7 @@ export const analyzePrescription = onCall(
       );
     }
 
-    return parsed;
+    // Ticket 0.1: normalize before returning so clients never receive partial shapes
+    return normalizeResponse(parsed as Record<string, unknown>);
   }
 );
